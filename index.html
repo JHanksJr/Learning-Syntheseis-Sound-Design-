@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Synthesizer - Learn Sound Design</title>
+    <title>Interactive Synthesizer - Learn Basic Sound Design</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* ===== CUSTOMIZATION VARIABLES ===== */
@@ -79,7 +79,24 @@
             background: var(--bg-tertiary);
             border-radius: var(--radius-medium);
             padding: var(--spacing-lg);
+        }
+
+        .sections-grid {
+            display: grid;
+            gap: var(--spacing-md);
             margin-bottom: var(--spacing-md);
+        }
+
+        .top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        @media (max-width: 768px) {
+            .top-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         .section h2 {
@@ -186,6 +203,30 @@
             border-color: var(--accent-color);
         }
 
+        .lfo-btn {
+            flex: 1;
+            min-width: 60px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .lfo-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .lfo-btn.active {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border-color: var(--accent-color);
+        }
+
         .keyboard {
             display: flex;
             gap: 4px;
@@ -260,101 +301,142 @@
 <body>
     <div class="container">
         <h1>Interactive Synthesizer</h1>
-        <p class="subtitle">Explore the fundamentals of sound synthesis and design</p>
+        <p class="subtitle">Explore the fundamentals of synthesis and sound design</p>
 
         <div class="synth-container">
-            <!-- Oscillator Section -->
-            <div class="section">
-                <h2>🌊 Oscillator - Waveforms</h2>
-                <p class="info-text">The oscillator generates the basic sound wave. Different waveforms create different tonal characteristics.</p>
-                <div class="waveform-select">
-                    <button class="wave-btn active" data-wave="sine">Sine</button>
-                    <button class="wave-btn" data-wave="square">Square</button>
-                    <button class="wave-btn" data-wave="sawtooth">Sawtooth</button>
-                    <button class="wave-btn" data-wave="triangle">Triangle</button>
-                </div>
-            </div>
+            <!-- Top Row: Oscillator and Filter -->
+            <div class="sections-grid">
+                <div class="top-row">
+                    <!-- Oscillator Section -->
+                    <div class="section">
+                        <h2>🌊 Oscillator</h2>
+                        <p class="info-text">The oscillator generates the basic sound wave. Different waveforms create different tonal characteristics.</p>
+                        <div class="waveform-select">
+                            <button class="wave-btn active" data-wave="sine">Sine</button>
+                            <button class="wave-btn" data-wave="square">Square</button>
+                            <button class="wave-btn" data-wave="sawtooth">Sawtooth</button>
+                            <button class="wave-btn" data-wave="triangle">Triangle</button>
+                        </div>
+                    </div>
 
-            <!-- Envelope Section -->
-            <div class="section">
-                <h2>📈 ADSR Envelope</h2>
-                <p class="info-text">The envelope shapes how the sound evolves over time from when you press a key to when you release it.</p>
-                
-                <div style="margin-bottom: var(--spacing-lg);">
-                    <canvas id="adsr-canvas" width="600" height="150" style="width: 100%; height: 150px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
-                </div>
-                
-                <div class="controls-grid">
-                    <div class="control-group">
-                        <span class="control-label">Attack</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="attack">
-                                <div class="knob-indicator"></div>
+                    <!-- Filter Section -->
+                    <div class="section">
+                        <h2>🎛️ Filter</h2>
+                        <p class="info-text">The filter removes certain frequencies, shaping the timbre of the sound.</p>
+                        <div class="controls-grid">
+                            <div class="control-group">
+                                <span class="control-label">Cutoff</span>
+                                <div class="knob-container">
+                                    <div class="knob" data-param="cutoff">
+                                        <div class="knob-indicator"></div>
+                                    </div>
+                                </div>
+                                <span class="value-display" id="cutoff-value">2000 Hz</span>
+                            </div>
+                            <div class="control-group">
+                                <span class="control-label">Resonance</span>
+                                <div class="knob-container">
+                                    <div class="knob" data-param="resonance">
+                                        <div class="knob-indicator"></div>
+                                    </div>
+                                </div>
+                                <span class="value-display" id="resonance-value">1</span>
                             </div>
                         </div>
-                        <span class="value-display" id="attack-value">0.01s</span>
-                    </div>
-                    <div class="control-group">
-                        <span class="control-label">Decay</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="decay">
-                                <div class="knob-indicator"></div>
-                            </div>
-                        </div>
-                        <span class="value-display" id="decay-value">0.2s</span>
-                    </div>
-                    <div class="control-group">
-                        <span class="control-label">Sustain</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="sustain">
-                                <div class="knob-indicator"></div>
-                            </div>
-                        </div>
-                        <span class="value-display" id="sustain-value">0.5</span>
-                    </div>
-                    <div class="control-group">
-                        <span class="control-label">Release</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="release">
-                                <div class="knob-indicator"></div>
-                            </div>
-                        </div>
-                        <span class="value-display" id="release-value">0.8s</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Filter Section -->
-            <div class="section">
-                <h2>🎛️ Filter</h2>
-                <p class="info-text">The filter removes certain frequencies, shaping the timbre of the sound.</p>
-                <div class="controls-grid">
-                    <div class="control-group">
-                        <span class="control-label">Cutoff</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="cutoff">
-                                <div class="knob-indicator"></div>
+                <!-- LFO Modulation Section -->
+                <div class="section">
+                    <h2>🔄 LFO Modulation</h2>
+                    <p class="info-text">Low Frequency Oscillator adds movement and expression by modulating the filter cutoff frequency.</p>
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-lg); align-items: center;">
+                        <div>
+                            <div class="waveform-select" style="display: flex; gap: 6px;">
+                                <button class="lfo-btn active" data-lfo-wave="sine" style="flex: 1; padding: 6px; font-size: 0.75rem;">Sine</button>
+                                <button class="lfo-btn" data-lfo-wave="square" style="flex: 1; padding: 6px; font-size: 0.75rem;">Square</button>
+                                <button class="lfo-btn" data-lfo-wave="sawtooth" style="flex: 1; padding: 6px; font-size: 0.75rem;">Saw</button>
+                                <button class="lfo-btn" data-lfo-wave="triangle" style="flex: 1; padding: 6px; font-size: 0.75rem;">Tri</button>
                             </div>
                         </div>
-                        <span class="value-display" id="cutoff-value">2000 Hz</span>
-                    </div>
-                    <div class="control-group">
-                        <span class="control-label">Resonance</span>
-                        <div class="knob-container">
-                            <div class="knob" data-param="resonance">
-                                <div class="knob-indicator"></div>
+                        <div class="controls-grid">
+                            <div class="control-group">
+                                <span class="control-label">Rate</span>
+                                <div class="knob-container">
+                                    <div class="knob" data-param="lfo-rate">
+                                        <div class="knob-indicator"></div>
+                                    </div>
+                                </div>
+                                <span class="value-display" id="lfo-rate-value">2 Hz</span>
+                            </div>
+                            <div class="control-group">
+                                <span class="control-label">Depth</span>
+                                <div class="knob-container">
+                                    <div class="knob" data-param="lfo-depth">
+                                        <div class="knob-indicator"></div>
+                                    </div>
+                                </div>
+                                <span class="value-display" id="lfo-depth-value">500</span>
                             </div>
                         </div>
-                        <span class="value-display" id="resonance-value">1</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Oscilloscope -->
-            <div class="section">
-                <h2>📊 Oscilloscope - Waveform Visualization</h2>
-                <p class="info-text">See the actual sound wave in real-time as you play notes. Different waveforms create different patterns.</p>
-                <canvas id="oscilloscope" width="800" height="200" style="width: 100%; height: 200px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
+                <!-- Envelope Section -->
+                <div class="section">
+                    <h2>📈 ADSR Envelope</h2>
+                    <p class="info-text">The envelope shapes how the sound evolves over time from when you press a key to when you release it.</p>
+                    
+                    <div style="margin-bottom: var(--spacing-lg);">
+                        <canvas id="adsr-canvas" width="600" height="150" style="width: 100%; height: 150px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
+                    </div>
+                    
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <span class="control-label">Attack</span>
+                            <div class="knob-container">
+                                <div class="knob" data-param="attack">
+                                    <div class="knob-indicator"></div>
+                                </div>
+                            </div>
+                            <span class="value-display" id="attack-value">0.01s</span>
+                        </div>
+                        <div class="control-group">
+                            <span class="control-label">Decay</span>
+                            <div class="knob-container">
+                                <div class="knob" data-param="decay">
+                                    <div class="knob-indicator"></div>
+                                </div>
+                            </div>
+                            <span class="value-display" id="decay-value">0.2s</span>
+                        </div>
+                        <div class="control-group">
+                            <span class="control-label">Sustain</span>
+                            <div class="knob-container">
+                                <div class="knob" data-param="sustain">
+                                    <div class="knob-indicator"></div>
+                                </div>
+                            </div>
+                            <span class="value-display" id="sustain-value">0.5</span>
+                        </div>
+                        <div class="control-group">
+                            <span class="control-label">Release</span>
+                            <div class="knob-container">
+                                <div class="knob" data-param="release">
+                                    <div class="knob-indicator"></div>
+                                </div>
+                            </div>
+                            <span class="value-display" id="release-value">0.8s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Oscilloscope -->
+                <div class="section">
+                    <h2>📊 Oscilloscope - Waveform Visualization</h2>
+                    <p class="info-text">See the actual sound wave in real-time as you play notes. Different waveforms create different patterns.</p>
+                    <canvas id="oscilloscope" width="800" height="200" style="width: 100%; height: 200px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
+                </div>
             </div>
 
             <!-- Keyboard -->
@@ -385,14 +467,28 @@
             sustain: 0.5,
             release: 0.8,
             cutoff: 2000,
-            resonance: 1
+            resonance: 1,
+            lfoWave: 'sine',
+            lfoRate: 2,
+            lfoDepth: 500
         };
+
+        // Create LFO
+        const lfo = new Tone.LFO({
+            frequency: synthParams.lfoRate,
+            type: synthParams.lfoWave,
+            min: synthParams.cutoff - synthParams.lfoDepth,
+            max: synthParams.cutoff + synthParams.lfoDepth
+        }).start();
 
         // Create synth with filter
         const filter = new Tone.Filter({
             frequency: synthParams.cutoff,
             Q: synthParams.resonance
         }).toDestination();
+
+        // Connect LFO to filter frequency
+        lfo.connect(filter.frequency);
 
         const synth = new Tone.Synth({
             oscillator: { type: synthParams.waveform },
@@ -538,6 +634,16 @@
             });
         });
 
+        // LFO Waveform selection
+        document.querySelectorAll('.lfo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lfo-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                synthParams.lfoWave = btn.dataset.lfoWave;
+                lfo.type = synthParams.lfoWave;
+            });
+        });
+
         // Knob control system
         class Knob {
             constructor(element, param, min, max, initialValue, updateFn) {
@@ -641,6 +747,8 @@
             (val) => {
                 synthParams.cutoff = val;
                 filter.frequency.value = val;
+                lfo.min = val - synthParams.lfoDepth;
+                lfo.max = val + synthParams.lfoDepth;
                 document.getElementById('cutoff-value').textContent = Math.round(val) + ' Hz';
             }
         );
@@ -652,6 +760,28 @@
                 synthParams.resonance = val;
                 filter.Q.value = val;
                 document.getElementById('resonance-value').textContent = val.toFixed(1);
+            }
+        );
+
+        // LFO Controls
+        new Knob(
+            document.querySelector('[data-param="lfo-rate"]'),
+            'lfo-rate', 0.1, 10, synthParams.lfoRate,
+            (val) => {
+                synthParams.lfoRate = val;
+                lfo.frequency.value = val;
+                document.getElementById('lfo-rate-value').textContent = val.toFixed(1) + ' Hz';
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="lfo-depth"]'),
+            'lfo-depth', 0, 2000, synthParams.lfoDepth,
+            (val) => {
+                synthParams.lfoDepth = val;
+                lfo.min = synthParams.cutoff - val;
+                lfo.max = synthParams.cutoff + val;
+                document.getElementById('lfo-depth-value').textContent = Math.round(val);
             }
         );
 
