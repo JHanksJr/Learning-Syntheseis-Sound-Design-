@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Synthesizer - Learn Sound Design</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* ===== CUSTOMIZATION VARIABLES ===== */
+        :root {
+            /* Colors - Change these to customize your theme */
+            --bg-primary: #0a0e27;
+            --bg-secondary: #1a1f3a;
+            --bg-tertiary: #252b4a;
+            --accent-color: #00d4ff;
+            --accent-hover: #00a8cc;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8d4;
+            --border-color: #2a3150;
+            
+            /* Shapes - Adjust border radius */
+            --radius-small: 4px;
+            --radius-medium: 8px;
+            --radius-large: 12px;
+            --radius-control: 50%; /* For knobs/round controls */
+            
+            /* Spacing */
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            
+            /* Fonts */
+            --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: var(--spacing-sm);
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-color), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .synth-container {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-large);
+            padding: var(--spacing-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .section {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-medium);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .section h2 {
+            color: var(--accent-color);
+            margin-bottom: var(--spacing-md);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .control-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .knob-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .knob {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, var(--bg-secondary), var(--bg-primary));
+            border-radius: var(--radius-control);
+            border: 3px solid var(--border-color);
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .knob:hover {
+            border-color: var(--accent-color);
+        }
+
+        .knob-indicator {
+            position: absolute;
+            width: 4px;
+            height: 35px;
+            background: var(--accent-color);
+            border-radius: 2px;
+            top: 8px;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            transition: background 0.3s;
+        }
+
+        .knob:hover .knob-indicator {
+            background: var(--accent-hover);
+        }
+
+        .value-display {
+            color: var(--accent-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .waveform-select {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .wave-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .wave-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .wave-btn.active {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border-color: var(--accent-color);
+        }
+
+        .keyboard {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .key {
+            width: 60px;
+            height: 120px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 0 0 var(--radius-small) var(--radius-small);
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: var(--spacing-sm);
+            color: #333;
+            font-weight: 600;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .key:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .key:active, .key.active {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(0);
+        }
+
+        .key.black {
+            width: 40px;
+            height: 75px;
+            background: #222;
+            color: white;
+            margin: 0 -22px;
+            z-index: 2;
+            border-radius: 0 0 var(--radius-small) var(--radius-small);
+        }
+
+        .key.black:hover {
+            background: #333;
+        }
+
+        .key.black:active, .key.black.active {
+            background: var(--accent-hover);
+        }
+
+        .info-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: var(--spacing-sm);
+        }
+
+        input[type="range"] {
+            display: none;
+        }
+
+        canvas {
+            border: 1px solid var(--border-color);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Synthesizer</h1>
+        <p class="subtitle">Explore the fundamentals of sound synthesis and design</p>
+
+        <div class="synth-container">
+            <!-- Oscillator Section -->
+            <div class="section">
+                <h2>🌊 Oscillator - Waveforms</h2>
+                <p class="info-text">The oscillator generates the basic sound wave. Different waveforms create different tonal characteristics.</p>
+                <div class="waveform-select">
+                    <button class="wave-btn active" data-wave="sine">Sine</button>
+                    <button class="wave-btn" data-wave="square">Square</button>
+                    <button class="wave-btn" data-wave="sawtooth">Sawtooth</button>
+                    <button class="wave-btn" data-wave="triangle">Triangle</button>
+                </div>
+            </div>
+
+            <!-- Envelope Section -->
+            <div class="section">
+                <h2>📈 ADSR Envelope</h2>
+                <p class="info-text">The envelope shapes how the sound evolves over time from when you press a key to when you release it.</p>
+                
+                <div style="margin-bottom: var(--spacing-lg);">
+                    <canvas id="adsr-canvas" width="600" height="150" style="width: 100%; height: 150px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
+                </div>
+                
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <span class="control-label">Attack</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="attack">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="attack-value">0.01s</span>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">Decay</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="decay">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="decay-value">0.2s</span>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">Sustain</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="sustain">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="sustain-value">0.5</span>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">Release</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="release">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="release-value">0.8s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="section">
+                <h2>🎛️ Filter</h2>
+                <p class="info-text">The filter removes certain frequencies, shaping the timbre of the sound.</p>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <span class="control-label">Cutoff</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="cutoff">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="cutoff-value">2000 Hz</span>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">Resonance</span>
+                        <div class="knob-container">
+                            <div class="knob" data-param="resonance">
+                                <div class="knob-indicator"></div>
+                            </div>
+                        </div>
+                        <span class="value-display" id="resonance-value">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oscilloscope -->
+            <div class="section">
+                <h2>📊 Oscilloscope - Waveform Visualization</h2>
+                <p class="info-text">See the actual sound wave in real-time as you play notes. Different waveforms create different patterns.</p>
+                <canvas id="oscilloscope" width="800" height="200" style="width: 100%; height: 200px; background: var(--bg-primary); border-radius: var(--radius-small);"></canvas>
+            </div>
+
+            <!-- Keyboard -->
+            <div class="keyboard">
+                <div class="key" data-note="C4">C</div>
+                <div class="key black" data-note="C#4">C#</div>
+                <div class="key" data-note="D4">D</div>
+                <div class="key black" data-note="D#4">D#</div>
+                <div class="key" data-note="E4">E</div>
+                <div class="key" data-note="F4">F</div>
+                <div class="key black" data-note="F#4">F#</div>
+                <div class="key" data-note="G4">G</div>
+                <div class="key black" data-note="G#4">G#</div>
+                <div class="key" data-note="A4">A</div>
+                <div class="key black" data-note="A#4">A#</div>
+                <div class="key" data-note="B4">B</div>
+                <div class="key" data-note="C5">C</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Synth parameters
+        const synthParams = {
+            waveform: 'sine',
+            attack: 0.01,
+            decay: 0.2,
+            sustain: 0.5,
+            release: 0.8,
+            cutoff: 2000,
+            resonance: 1
+        };
+
+        // Create synth with filter
+        const filter = new Tone.Filter({
+            frequency: synthParams.cutoff,
+            Q: synthParams.resonance
+        }).toDestination();
+
+        const synth = new Tone.Synth({
+            oscillator: { type: synthParams.waveform },
+            envelope: {
+                attack: synthParams.attack,
+                decay: synthParams.decay,
+                sustain: synthParams.sustain,
+                release: synthParams.release
+            }
+        }).connect(filter);
+
+        // Oscilloscope setup
+        const waveform = new Tone.Waveform(512);
+        synth.connect(waveform);
+        const oscCanvas = document.getElementById('oscilloscope');
+        const oscCtx = oscCanvas.getContext('2d');
+        const oscWidth = oscCanvas.width;
+        const oscHeight = oscCanvas.height;
+
+        function drawOscilloscope() {
+            requestAnimationFrame(drawOscilloscope);
+            
+            const values = waveform.getValue();
+            
+            oscCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+            oscCtx.fillRect(0, 0, oscWidth, oscHeight);
+            
+            oscCtx.beginPath();
+            oscCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            oscCtx.lineWidth = 2;
+            
+            const sliceWidth = oscWidth / values.length;
+            let x = 0;
+            
+            for (let i = 0; i < values.length; i++) {
+                const v = (values[i] + 1) / 2;
+                const y = v * oscHeight;
+                
+                if (i === 0) {
+                    oscCtx.moveTo(x, y);
+                } else {
+                    oscCtx.lineTo(x, y);
+                }
+                
+                x += sliceWidth;
+            }
+            
+            oscCtx.stroke();
+        }
+        
+        drawOscilloscope();
+
+        // ADSR Visualization
+        const adsrCanvas = document.getElementById('adsr-canvas');
+        const adsrCtx = adsrCanvas.getContext('2d');
+        const adsrWidth = adsrCanvas.width;
+        const adsrHeight = adsrCanvas.height;
+
+        function drawADSR() {
+            const attack = synthParams.attack;
+            const decay = synthParams.decay;
+            const sustain = synthParams.sustain;
+            const release = synthParams.release;
+            
+            // Calculate total time and scale
+            const totalTime = attack + decay + 0.5 + release; // 0.5s for sustain display
+            const timeScale = (adsrWidth - 40) / totalTime;
+            const padding = 20;
+            
+            adsrCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+            adsrCtx.fillRect(0, 0, adsrWidth, adsrHeight);
+            
+            // Draw grid
+            adsrCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            adsrCtx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i * (adsrHeight - 2 * padding) / 4);
+                adsrCtx.beginPath();
+                adsrCtx.moveTo(padding, y);
+                adsrCtx.lineTo(adsrWidth - padding, y);
+                adsrCtx.stroke();
+            }
+            
+            // Draw ADSR curve
+            adsrCtx.beginPath();
+            adsrCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            adsrCtx.lineWidth = 3;
+            
+            const maxHeight = adsrHeight - 2 * padding;
+            
+            // Start point
+            let x = padding;
+            let y = adsrHeight - padding;
+            adsrCtx.moveTo(x, y);
+            
+            // Attack phase
+            x = padding + (attack * timeScale);
+            y = padding;
+            adsrCtx.lineTo(x, y);
+            
+            // Decay phase
+            x = padding + ((attack + decay) * timeScale);
+            y = padding + (maxHeight * (1 - sustain));
+            adsrCtx.lineTo(x, y);
+            
+            // Sustain phase
+            x = padding + ((attack + decay + 0.5) * timeScale);
+            adsrCtx.lineTo(x, y);
+            
+            // Release phase
+            x = padding + ((attack + decay + 0.5 + release) * timeScale);
+            y = adsrHeight - padding;
+            adsrCtx.lineTo(x, y);
+            
+            adsrCtx.stroke();
+            
+            // Draw labels
+            adsrCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
+            adsrCtx.font = '12px sans-serif';
+            
+            let labelX = padding + (attack * timeScale / 2);
+            adsrCtx.fillText('A', labelX - 5, adsrHeight - 5);
+            
+            labelX = padding + (attack * timeScale) + (decay * timeScale / 2);
+            adsrCtx.fillText('D', labelX - 5, adsrHeight - 5);
+            
+            labelX = padding + (attack + decay) * timeScale + (0.25 * timeScale);
+            adsrCtx.fillText('S', labelX - 5, adsrHeight - 5);
+            
+            labelX = padding + (attack + decay + 0.5) * timeScale + (release * timeScale / 2);
+            adsrCtx.fillText('R', labelX - 5, adsrHeight - 5);
+        }
+        
+        drawADSR();
+
+        // Waveform selection
+        document.querySelectorAll('.wave-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.wave-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                synthParams.waveform = btn.dataset.wave;
+                synth.oscillator.type = synthParams.waveform;
+            });
+        });
+
+        // Knob control system
+        class Knob {
+            constructor(element, param, min, max, initialValue, updateFn) {
+                this.element = element;
+                this.param = param;
+                this.min = min;
+                this.max = max;
+                this.value = initialValue;
+                this.updateFn = updateFn;
+                this.indicator = element.querySelector('.knob-indicator');
+                
+                this.isDragging = false;
+                this.startY = 0;
+                this.startValue = 0;
+
+                this.element.addEventListener('mousedown', this.startDrag.bind(this));
+                document.addEventListener('mousemove', this.drag.bind(this));
+                document.addEventListener('mouseup', this.endDrag.bind(this));
+                
+                this.updateRotation();
+            }
+
+            startDrag(e) {
+                this.isDragging = true;
+                this.startY = e.clientY;
+                this.startValue = this.value;
+                e.preventDefault();
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+                
+                const deltaY = this.startY - e.clientY;
+                const range = this.max - this.min;
+                const delta = (deltaY / 100) * range;
+                
+                this.value = Math.max(this.min, Math.min(this.max, this.startValue + delta));
+                this.updateRotation();
+                this.updateFn(this.value);
+            }
+
+            endDrag() {
+                this.isDragging = false;
+            }
+
+            updateRotation() {
+                const percentage = (this.value - this.min) / (this.max - this.min);
+                const rotation = -135 + (percentage * 270);
+                this.indicator.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+            }
+        }
+
+        // Initialize knobs
+        new Knob(
+            document.querySelector('[data-param="attack"]'),
+            'attack', 0.001, 2, synthParams.attack,
+            (val) => {
+                synthParams.attack = val;
+                synth.envelope.attack = val;
+                document.getElementById('attack-value').textContent = val.toFixed(2) + 's';
+                drawADSR();
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="decay"]'),
+            'decay', 0.001, 2, synthParams.decay,
+            (val) => {
+                synthParams.decay = val;
+                synth.envelope.decay = val;
+                document.getElementById('decay-value').textContent = val.toFixed(2) + 's';
+                drawADSR();
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="sustain"]'),
+            'sustain', 0, 1, synthParams.sustain,
+            (val) => {
+                synthParams.sustain = val;
+                synth.envelope.sustain = val;
+                document.getElementById('sustain-value').textContent = val.toFixed(2);
+                drawADSR();
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="release"]'),
+            'release', 0.001, 5, synthParams.release,
+            (val) => {
+                synthParams.release = val;
+                synth.envelope.release = val;
+                document.getElementById('release-value').textContent = val.toFixed(2) + 's';
+                drawADSR();
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="cutoff"]'),
+            'cutoff', 100, 5000, synthParams.cutoff,
+            (val) => {
+                synthParams.cutoff = val;
+                filter.frequency.value = val;
+                document.getElementById('cutoff-value').textContent = Math.round(val) + ' Hz';
+            }
+        );
+
+        new Knob(
+            document.querySelector('[data-param="resonance"]'),
+            'resonance', 0.1, 20, synthParams.resonance,
+            (val) => {
+                synthParams.resonance = val;
+                filter.Q.value = val;
+                document.getElementById('resonance-value').textContent = val.toFixed(1);
+            }
+        );
+
+        // Keyboard functionality
+        document.querySelectorAll('.key').forEach(key => {
+            key.addEventListener('mousedown', async () => {
+                await Tone.start();
+                const note = key.dataset.note;
+                synth.triggerAttack(note);
+                key.classList.add('active');
+            });
+
+            key.addEventListener('mouseup', () => {
+                synth.triggerRelease();
+                key.classList.remove('active');
+            });
+
+            key.addEventListener('mouseleave', () => {
+                synth.triggerRelease();
+                key.classList.remove('active');
+            });
+        });
+
+        // Computer keyboard support
+        const keyMap = {
+            'a': 'C4', 'w': 'C#4', 's': 'D4', 'e': 'D#4', 'd': 'E4',
+            'f': 'F4', 't': 'F#4', 'g': 'G4', 'y': 'G#4', 'h': 'A4',
+            'u': 'A#4', 'j': 'B4', 'k': 'C5'
+        };
+
+        let currentKey = null;
+
+        document.addEventListener('keydown', async (e) => {
+            if (currentKey === e.key) return;
+            const note = keyMap[e.key.toLowerCase()];
+            if (note) {
+                await Tone.start();
+                currentKey = e.key;
+                synth.triggerAttack(note);
+                document.querySelector(`[data-note="${note}"]`).classList.add('active');
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const note = keyMap[e.key.toLowerCase()];
+            if (note && currentKey === e.key) {
+                currentKey = null;
+                synth.triggerRelease();
+                document.querySelector(`[data-note="${note}"]`).classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
